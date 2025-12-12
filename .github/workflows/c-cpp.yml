@@ -1,0 +1,67 @@
+name: C Program CI/CD
+
+on:
+  push:
+  pull_request:
+
+jobs:
+
+  ci:
+    name: Build & Test
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout repo
+      uses: actions/checkout@v3
+
+    - name: Install GCC
+      run: sudo apt-get install build-essential -y
+
+    - name: Build program
+      run: make
+
+    - name: Simple Test (exit 0 if binary exists)
+      run: |
+        if [ -f "./program" ]; then
+          echo "Program built successfully!"
+        else
+          echo "Build failed!"
+          exit 1
+        fi
+
+    - name: Upload program artifact
+      uses: actions/upload-artifact@v3
+      with:
+        name: program-binary
+        path: program
+
+
+  cd:
+    name: Deploy
+    needs: ci
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+
+    steps:
+    - name: Checkout repo
+      uses: actions/checkout@v3
+
+    - name: Download program artifact
+      uses: actions/download-artifact@v3
+      with:
+        name: program-binary
+        path: deploy
+
+    # -------- OPTIONAL DEPLOYMENT (edit as needed) --------
+    # - name: Deploy to server (SCP)
+    #   uses: appleboy/scp-action@v0.1.5
+    #   with:
+    #     host: ${{ secrets.SERVER_IP }}
+    #     username: ${{ secrets.SERVER_USER }}
+    #     key: ${{ secrets.SERVER_SSH_KEY }}
+    #     source: "deploy/program"
+    #     target: "~/apps/"
+    # -------------------------------------------------------
+
+    - name: Deployment complete
+      run: echo "CD Successfully executed!"
